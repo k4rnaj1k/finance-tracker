@@ -36,14 +36,15 @@ interface ExpenseEditFormProps {
   expense: Expense
   categories: Category[]
   onComplete: () => void
+  defaultCurrency: string
 }
 
-export function ExpenseEditForm({ expense, categories, onComplete }: ExpenseEditFormProps) {
+export function ExpenseEditForm({ expense, categories, onComplete, defaultCurrency }: ExpenseEditFormProps) {
   const [amount, setAmount] = useState(expense.amount.toString())
   const [description, setDescription] = useState(expense.description)
   const [categoryId, setCategoryId] = useState(expense.categoryId)
   const [date, setDate] = useState<Date>(new Date(expense.date))
-  const [currency, setCurrency] = useState(expense.currency || "USD")
+  const [currency, setCurrency] = useState(expense.currency || defaultCurrency)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {

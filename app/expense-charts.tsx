@@ -10,13 +10,15 @@ import {
   ResponsiveContainer,
   Tooltip,
   Legend,
-  BarChart,
   Bar,
+  BarChart,
   XAxis,
   YAxis,
   CartesianGrid,
 } from "recharts"
 import { convertCurrency } from "./db"
+import { Switch } from "@/components/ui/switch"
+import { useMediaQuery } from "@/hooks/use-media-query"
 
 // Define the Expense type
 interface Expense {
@@ -47,12 +49,33 @@ interface ExpenseChartsProps {
   categories: Category[]
   defaultCurrency: string
   exchangeRate: ExchangeRate | null
+  incomeMonthStart: Date | null
 }
 
-export function ExpenseCharts({ expenses, categories, defaultCurrency, exchangeRate }: ExpenseChartsProps) {
+export function ExpenseCharts({
+  expenses,
+  categories,
+  defaultCurrency,
+  exchangeRate,
+  incomeMonthStart,
+}: ExpenseChartsProps) {
   const [activeTab, setActiveTab] = useState("pie")
   const [chartData, setChartData] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [currentIncomeMonthStart, setCurrentIncomeMonthStart] = useState<Date | null>(null)
+  const [showOnlyCurrentMonth, setShowOnlyCurrentMonth] = useState(true)
+  const [currentCurrency, setCurrentCurrency] = useState(defaultCurrency)
+  const isMobile = useMediaQuery("(max-width: 768px)")
+
+  // Update when default currency changes
+  useEffect(() => {
+    setCurrentCurrency(defaultCurrency)
+  }, [defaultCurrency])
+
+  // Load the income month start date
+  useEffect(() => {
+    setCurrentIncomeMonthStart(incomeMonthStart)
+  }, [incomeMonthStart])
 
   // Prepare data for charts - convert all amounts to default currency
   useEffect(() => {
@@ -69,11 +92,21 @@ export function ExpenseCharts({ expenses, categories, defaultCurrency, exchangeR
 
         // Sum up expenses by category, converting currencies as needed
         for (const expense of expenses) {
+          // Skip expenses before the income month start if filter is enabled
+          if (showOnlyCurrentMonth && currentIncomeMonthStart && new Date(expense.date) < currentIncomeMonthStart) {
+            continue
+          }
+
           let amount = expense.amount
 
           // Convert if needed
-          if (expense.currency !== defaultCurrency) {
-            amount = await convertCurrency(expense.amount, expense.currency, defaultCurrency)
+          if (expense.currency !== currentCurrency) {
+            try {
+              amount = await convertCurrency(expense.amount, expense.currency, currentCurrency)
+            } catch (error) {
+              console.error("Error converting expense for chart:", error)
+              // Use original amount if conversion fails
+            }
           }
 
           categoryTotals[expense.categoryId] = (categoryTotals[expense.categoryId] || 0) + amount
@@ -97,7 +130,7 @@ export function ExpenseCharts({ expenses, categories, defaultCurrency, exchangeR
     }
 
     prepareChartData()
-  }, [expenses, categories, defaultCurrency, exchangeRate])
+  }, [expenses, categories, currentCurrency, exchangeRate, showOnlyCurrentMonth, currentIncomeMonthStart])
 
   // Currency symbol helper
   const getCurrencySymbol = (currency: string) => {
@@ -120,6 +153,20 @@ export function ExpenseCharts({ expenses, categories, defaultCurrency, exchangeR
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+        <div className="text-sm font-medium">
+          {showOnlyCurrentMonth ? "Showing expenses for current income month only" : "Showing all expenses"}
+        </div>
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-muted-foreground">All expenses</span>
+          <Switch
+            checked={showOnlyCurrentMonth}
+            onCheckedChange={setShowOnlyCurrentMonth}
+            aria-label="Toggle current month only"
+          />
+          <span className="text-sm text-muted-foreground">Current month only</span>
+        </div>
+      </div>
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="pie">Pie Chart</TabsTrigger>
@@ -129,16 +176,16 @@ export function ExpenseCharts({ expenses, categories, defaultCurrency, exchangeR
         <TabsContent value="pie" className="pt-4">
           <Card>
             <CardContent className="pt-6">
-              <div className="h-[400px]">
+              <div className="h-[300px] md:h-[400px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={chartData}
                       cx="50%"
                       cy="50%"
-                      labelLine={true}
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={150}
+                      labelLine={!isMobile}
+                      label={isMobile ? undefined : ({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={isMobile ? 100 : 150}
                       fill="#8884d8"
                       dataKey="value"
                     >
@@ -148,11 +195,11 @@ export function ExpenseCharts({ expenses, categories, defaultCurrency, exchangeR
                     </Pie>
                     <Tooltip
                       formatter={(value: number) => [
-                        `${getCurrencySymbol(defaultCurrency)}${value.toFixed(2)} ${defaultCurrency}`,
+                        `${getCurrencySymbol(currentCurrency)}${value.toFixed(2)} ${currentCurrency}`,
                         "Amount",
                       ]}
                     />
-                    <Legend />
+                    <Legend layout={isMobile ? "horizontal" : "vertical"} verticalAlign="bottom" align="center" />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -163,28 +210,41 @@ export function ExpenseCharts({ expenses, categories, defaultCurrency, exchangeR
         <TabsContent value="bar" className="pt-4">
           <Card>
             <CardContent className="pt-6">
-              <div className="h-[400px]">
+              <div className="h-[300px] md:h-[400px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={chartData}
                     margin={{
                       top: 5,
                       right: 30,
-                      left: 20,
-                      bottom: 5,
+                      left: isMobile ? 0 : 20,
+                      bottom: isMobile ? 60 : 5,
                     }}
+                    layout={isMobile ? "vertical" : "horizontal"}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis tickFormatter={(value) => `${getCurrencySymbol(defaultCurrency)}${value}`} />
+                    {isMobile ? (
+                      <>
+                        <XAxis
+                          type="number"
+                          tickFormatter={(value) => `${getCurrencySymbol(currentCurrency)}${value}`}
+                        />
+                        <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 12 }} />
+                      </>
+                    ) : (
+                      <>
+                        <XAxis dataKey="name" />
+                        <YAxis tickFormatter={(value) => `${getCurrencySymbol(currentCurrency)}${value}`} />
+                      </>
+                    )}
                     <Tooltip
                       formatter={(value: number) => [
-                        `${getCurrencySymbol(defaultCurrency)}${value.toFixed(2)} ${defaultCurrency}`,
+                        `${getCurrencySymbol(currentCurrency)}${value.toFixed(2)} ${currentCurrency}`,
                         "Amount",
                       ]}
                     />
                     <Legend />
-                    <Bar dataKey="value" name={`Amount (${defaultCurrency})`}>
+                    <Bar dataKey="value" name={`Amount (${currentCurrency})`}>
                       {chartData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}

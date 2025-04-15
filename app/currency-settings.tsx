@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { format } from "date-fns"
-import { setDefaultCurrency, addExchangeRate, getAllExchangeRates, getLatestExchangeRate } from "./db"
+import { setDefaultCurrency, addExchangeRate, getAllExchangeRates } from "./db"
 import { toast } from "@/components/ui/use-toast"
 
 interface ExchangeRate {
@@ -32,6 +32,11 @@ export function CurrencySettings({ defaultCurrency, onSettingsChanged, exchangeR
   const [isUpdating, setIsUpdating] = useState(false)
   const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>([])
 
+  // Update selected currency when default currency changes
+  useEffect(() => {
+    setSelectedCurrency(defaultCurrency)
+  }, [defaultCurrency])
+
   // Load exchange rate history
   useEffect(() => {
     const loadExchangeRates = async () => {
@@ -47,13 +52,25 @@ export function CurrencySettings({ defaultCurrency, onSettingsChanged, exchangeR
   }, [])
 
   const handleCurrencyChange = async () => {
+    if (selectedCurrency === defaultCurrency) {
+      toast({
+        title: "No change",
+        description: `${selectedCurrency} is already your default currency`,
+      })
+      return
+    }
+
+    setIsUpdating(true)
+
     try {
       await setDefaultCurrency(selectedCurrency)
-      onSettingsChanged()
+
       toast({
         title: "Default currency updated",
         description: `Your default currency is now ${selectedCurrency}`,
       })
+
+      onSettingsChanged()
     } catch (error) {
       console.error("Error updating default currency:", error)
       toast({
@@ -61,6 +78,8 @@ export function CurrencySettings({ defaultCurrency, onSettingsChanged, exchangeR
         description: "Failed to update default currency. Please try again.",
         variant: "destructive",
       })
+    } finally {
+      setIsUpdating(false)
     }
   }
 
@@ -88,8 +107,6 @@ export function CurrencySettings({ defaultCurrency, onSettingsChanged, exchangeR
       // Refresh data
       const rates = await getAllExchangeRates()
       setExchangeRates(rates)
-
-      const latestRate = await getLatestExchangeRate()
 
       // Reset form
       setNewExchangeRate("")
@@ -134,7 +151,12 @@ export function CurrencySettings({ defaultCurrency, onSettingsChanged, exchangeR
                   </SelectContent>
                 </Select>
               </div>
-              <Button onClick={handleCurrencyChange}>Save Default Currency</Button>
+              <Button onClick={handleCurrencyChange} disabled={isUpdating || selectedCurrency === defaultCurrency}>
+                {isUpdating ? "Updating..." : "Save Default Currency"}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Current default currency: <strong>{defaultCurrency}</strong>
+              </p>
             </div>
           </CardContent>
         </Card>

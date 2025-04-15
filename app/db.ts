@@ -91,7 +91,7 @@ export const initDB = (): Promise<void> => {
           const defaultRate = {
             id: "1",
             date: new Date().toISOString(),
-            rate: 41.2, // Default UAH per 1 USD
+            rate: 38.5, // Default UAH per 1 USD
           }
           ratesStore.add(defaultRate)
         }
@@ -520,6 +520,7 @@ export const getAllExchangeRates = (): Promise<ExchangeRate[]> => {
 
 // Convert amount between currencies
 export const convertCurrency = async (amount: number, fromCurrency: string, toCurrency: string): Promise<number> => {
+  // If currencies are the same, no conversion needed
   if (fromCurrency === toCurrency) {
     return amount
   }
@@ -537,5 +538,107 @@ export const convertCurrency = async (amount: number, fromCurrency: string, toCu
     return amount / rate.rate
   }
 
+  // If we reach here, something went wrong with the currency codes
+  console.error(`Unsupported currency conversion: ${fromCurrency} to ${toCurrency}`)
   return amount
+}
+
+// Get income month start date
+export const getIncomeMonthStart = (): Promise<string | null> => {
+  return new Promise((resolve, reject) => {
+    if (!db) {
+      reject(new Error("Database not initialized"))
+      return
+    }
+
+    const transaction = db.transaction(["settings"], "readonly")
+    const store = transaction.objectStore("settings")
+    const request = store.get("incomeMonthStart")
+
+    request.onsuccess = () => {
+      if (request.result) {
+        resolve(request.result.value)
+      } else {
+        resolve(null)
+      }
+    }
+
+    request.onerror = (event) => {
+      console.error("Error getting income month start:", event)
+      reject(new Error("Could not get income month start"))
+    }
+  })
+}
+
+// Set income month start date
+export const setIncomeMonthStart = (date: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    if (!db) {
+      reject(new Error("Database not initialized"))
+      return
+    }
+
+    const transaction = db.transaction(["settings"], "readwrite")
+    const store = transaction.objectStore("settings")
+    const request = store.put({ key: "incomeMonthStart", value: date })
+
+    request.onsuccess = () => {
+      resolve()
+    }
+
+    request.onerror = (event) => {
+      console.error("Error setting income month start:", event)
+      reject(new Error("Could not set income month start"))
+    }
+  })
+}
+
+// Get previous income month start date
+export const getPreviousIncomeMonthStart = (): Promise<string | null> => {
+  return new Promise((resolve, reject) => {
+    if (!db) {
+      reject(new Error("Database not initialized"))
+      return
+    }
+
+    const transaction = db.transaction(["settings"], "readonly")
+    const store = transaction.objectStore("settings")
+    const request = store.get("previousIncomeMonthStart")
+
+    request.onsuccess = () => {
+      if (request.result) {
+        resolve(request.result.value)
+      } else {
+        resolve(null)
+      }
+    }
+
+    request.onerror = (event) => {
+      console.error("Error getting previous income month start:", event)
+      reject(new Error("Could not get previous income month start"))
+    }
+  })
+}
+
+// Set previous income month start date
+export const setPreviousIncomeMonthStart = (date: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    if (!db) {
+      reject(new Error("Database not initialized"))
+      return
+    }
+
+    const transaction = db.transaction(["settings"], "readwrite")
+    const store = transaction.objectStore("settings")
+    const request = store.put({ key: "previousIncomeMonthStart", value: date })
+
+    request.onsuccess = () => {
+      resolve()
+    }
+
+    request.onerror = (event) => {
+      console.error("Error setting previous income month start:", event)
+      reject(new Error("Could not set previous income month start"))
+    }
+  })
 }

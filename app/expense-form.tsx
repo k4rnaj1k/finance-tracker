@@ -92,7 +92,7 @@ export function ExpenseForm({ categories, onExpenseAdded, defaultCurrency }: Exp
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         <div className="space-y-2">
           <Label htmlFor="amount">Amount</Label>
           <div className="flex space-x-2">
@@ -160,7 +160,7 @@ export function ExpenseForm({ categories, onExpenseAdded, defaultCurrency }: Exp
               {date ? format(date, "PPP") : <span>Pick a date</span>}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
+          <PopoverContent className="w-auto p-0" align="start">
             <Calendar mode="single" selected={date} onSelect={(date) => date && setDate(date)} initialFocus />
           </PopoverContent>
         </Popover>
