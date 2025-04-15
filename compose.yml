@@ -1,0 +1,15 @@
+services:
+  app:
+    build: .
+    container_name: next_finance
+    labels:
+      # --- Router Definition (HTTPS) ---
+      # Unique name for this router
+      - "traefik.http.routers.finance-app.rule=Host(`finance.k4rnaj1k.space`)"
+      - "traefik.http.routers.finance-app.entrypoints=websecure" # Target your secure entrypoint
+      - "traefik.http.routers.finance-app.tls=true"
+
+      # --- Service Definition ---
+      # Define how Traefik connects to this container's service
+      # Unique name for this service within Traefik
+      - "traefik.http.services.finance-app.loadbalancer.server.port=3000" # Internal port of the Next.js app
