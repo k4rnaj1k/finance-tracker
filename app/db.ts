@@ -91,7 +91,7 @@ export const initDB = (): Promise<void> => {
           const defaultRate = {
             id: "1",
             date: new Date().toISOString(),
-            rate: 38.5, // Default UAH per 1 USD
+            rate: 41.2, // Default UAH per 1 USD
           }
           ratesStore.add(defaultRate)
         }

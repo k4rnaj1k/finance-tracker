@@ -11,6 +11,7 @@ import { ExpenseList } from "./expense-list"
 import { CategoryManager } from "./category-manager"
 import { ExpenseCharts } from "./expense-charts"
 import { CurrencySettings } from "./currency-settings"
+import { InstallPrompt } from "./install-prompt"
 import {
   initDB,
   getIncome,
@@ -60,6 +61,24 @@ export default function FinanceTracker() {
   const [defaultCurrency, setDefaultCurrency] = useState("USD")
   const [incomeCurrency, setIncomeCurrency] = useState("USD")
   const [exchangeRate, setExchangeRate] = useState<ExchangeRate | null>(null)
+  const [isOnline, setIsOnline] = useState(true)
+
+  useEffect(() => {
+    // Check online status
+    setIsOnline(navigator.onLine)
+
+    // Listen for online/offline events
+    const handleOnline = () => setIsOnline(true)
+    const handleOffline = () => setIsOnline(false)
+
+    window.addEventListener("online", handleOnline)
+    window.addEventListener("offline", handleOffline)
+
+    return () => {
+      window.removeEventListener("online", handleOnline)
+      window.removeEventListener("offline", handleOffline)
+    }
+  }, [])
 
   useEffect(() => {
     const initialize = async () => {
@@ -174,6 +193,17 @@ export default function FinanceTracker() {
   return (
     <div className="container mx-auto py-6">
       <h1 className="text-3xl font-bold mb-6">Personal Finance Tracker</h1>
+
+      {/* Offline indicator */}
+      {!isOnline && (
+        <div className="bg-amber-100 border-l-4 border-amber-500 text-amber-700 p-4 mb-6 rounded" role="alert">
+          <p className="font-bold">You are offline</p>
+          <p>The app is working in offline mode. Your data is saved locally.</p>
+        </div>
+      )}
+
+      {/* Install prompt */}
+      <InstallPrompt />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <Card>
