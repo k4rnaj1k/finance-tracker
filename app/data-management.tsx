@@ -26,6 +26,9 @@ import {
   setDefaultCurrency,
   setIncomeMonthStart,
   setPreviousIncomeMonthStart,
+  deleteCategory,
+  deleteExchangeRate,
+  deleteExpense,
 } from "./db"
 import {
   Dialog,
@@ -193,12 +196,16 @@ export function DataManagement({ onDataChanged }: DataManagementProps) {
       // Import categories
       setImportProgress(30)
       for (const category of data.categories) {
+        const categories = await getCategories();
+        categories.forEach(async (cat) => { await deleteCategory(cat.id) });
         await addCategory(category)
       }
 
       // Import exchange rates
       setImportProgress(50)
       for (const rate of data.exchangeRates) {
+        const exchangeRates = await getAllExchangeRates();
+        exchangeRates.forEach(async (rate) => { await deleteExchangeRate(rate.id) });
         await addExchangeRate(rate)
       }
 
@@ -206,6 +213,8 @@ export function DataManagement({ onDataChanged }: DataManagementProps) {
       let count = 0
       const total = data.expenses.length
       for (const expense of data.expenses) {
+        const expenses = await getExpenses();
+        expenses.forEach(async (exp) => { await deleteExpense(exp.id) });
         await addExpense(expense)
         count++
         setImportProgress(50 + Math.floor((count / total) * 40))

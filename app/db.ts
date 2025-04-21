@@ -176,6 +176,25 @@ export const updateExpense = (expense: Expense): Promise<void> => {
   })
 }
 
+export const deleteExchangeRate = (id: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    if (!db) {
+      reject(new Error("Database not initialized"))
+      return
+    }
+    const transaction = db.transaction(["exchangeRates"], "readwrite")
+    const store = transaction.objectStore("exchangeRates")
+    const request = store.delete(id)
+    request.onsuccess = () => {
+      resolve()
+    }
+    request.onerror = (event) => {
+      console.error("Error deleting exchange rate:", event)
+      reject(new Error("Could not delete exchange rate"))
+    }
+  })
+};
+
 // Delete an expense
 export const deleteExpense = (id: string): Promise<void> => {
   return new Promise((resolve, reject) => {
