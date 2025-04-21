@@ -15,6 +15,7 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
+  LabelList,
 } from "recharts"
 import { convertCurrency } from "./db"
 import { Switch } from "@/components/ui/switch"
@@ -125,6 +126,7 @@ export function ExpenseCharts({
             color: category.color,
           }))
           .filter((item) => item.value > 0) // Only include categories with expenses
+          .sort((a, b) => b.value - a.value) // Sort by value (highest first)
 
         setChartData(data)
       } catch (error) {
@@ -142,6 +144,11 @@ export function ExpenseCharts({
     return currency === "USD" ? "$" : "₴"
   }
 
+  // Format currency for display
+  const formatCurrency = (value: number) => {
+    return `${getCurrencySymbol(currentCurrency)}${value.toFixed(2)}`
+  }
+
   // If no expenses, show a message
   if (expenses.length === 0) {
     return (
@@ -155,6 +162,13 @@ export function ExpenseCharts({
   if (isLoading) {
     return <div className="text-center py-6 text-muted-foreground">Preparing chart data...</div>
   }
+
+  // Prepare mobile-specific chart data with shortened names
+  const mobileChartData = chartData.map((item) => ({
+    ...item,
+    // Shorten name for mobile display
+    shortName: item.name.length > 12 ? `${item.name.substring(0, 12)}...` : item.name,
+  }))
 
   return (
     <div className="space-y-4">
@@ -198,12 +212,7 @@ export function ExpenseCharts({
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip
-                      formatter={(value: number) => [
-                        `${getCurrencySymbol(currentCurrency)}${value.toFixed(2)} ${currentCurrency}`,
-                        "Amount",
-                      ]}
-                    />
+                    <Tooltip formatter={(value: number) => [formatCurrency(value), "Amount"]} />
                     <Legend layout={isMobile ? "horizontal" : "vertical"} verticalAlign="bottom" align="center" />
                   </PieChart>
                 </ResponsiveContainer>
@@ -215,48 +224,59 @@ export function ExpenseCharts({
         <TabsContent value="bar" className="pt-4">
           <Card>
             <CardContent className="pt-6">
-              <div className="h-[300px] md:h-[400px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={chartData}
-                    margin={{
-                      top: 5,
-                      right: 30,
-                      left: isMobile ? 0 : 20,
-                      bottom: isMobile ? 60 : 5,
-                    }}
-                    layout={isMobile ? "vertical" : "horizontal"}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    {isMobile ? (
-                      <>
-                        <XAxis
-                          type="number"
-                          tickFormatter={(value) => `${getCurrencySymbol(currentCurrency)}${value}`}
+              {isMobile ? (
+                // Mobile-specific horizontal bar chart
+                <div className="h-[400px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      layout="vertical"
+                      data={mobileChartData.slice(0, 10)} // Limit to top 10 for mobile
+                      margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
+                      <XAxis type="number" tickFormatter={(value) => `${value.toFixed(0)}`} />
+                      <YAxis type="category" dataKey="shortName" width={80} tick={{ fontSize: 12 }} />
+                      <Tooltip
+                        formatter={(value: number) => [formatCurrency(value), "Amount"]}
+                        labelFormatter={(label) => {
+                          // Find the original full name
+                          const item = mobileChartData.find((d) => d.shortName === label)
+                          return item ? item.name : label
+                        }}
+                      />
+                      <Bar dataKey="value" name={`Amount (${currentCurrency})`} radius={[0, 4, 4, 0]}>
+                        {mobileChartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                        <LabelList
+                          dataKey="value"
+                          position="right"
+                          formatter={(value: number) => formatCurrency(value)}
+                          style={{ fontSize: "10px", fill: "#666" }}
                         />
-                        <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 12 }} />
-                      </>
-                    ) : (
-                      <>
-                        <XAxis dataKey="name" />
-                        <YAxis tickFormatter={(value) => `${getCurrencySymbol(currentCurrency)}${value}`} />
-                      </>
-                    )}
-                    <Tooltip
-                      formatter={(value: number) => [
-                        `${getCurrencySymbol(currentCurrency)}${value.toFixed(2)} ${currentCurrency}`,
-                        "Amount",
-                      ]}
-                    />
-                    <Legend />
-                    <Bar dataKey="value" name={`Amount (${currentCurrency})`}>
-                      {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                // Desktop bar chart
+                <div className="h-[400px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 30 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis tickFormatter={(value) => `${getCurrencySymbol(currentCurrency)}${value}`} />
+                      <Tooltip formatter={(value: number) => [formatCurrency(value), "Amount"]} />
+                      <Legend />
+                      <Bar dataKey="value" name={`Amount (${currentCurrency})`} radius={[4, 4, 0, 0]}>
+                        {chartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
