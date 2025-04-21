@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { BarChart, Wallet, Plus, Trash2, Edit, Save, Settings, Menu, Database } from "lucide-react"
+import { BarChart, Wallet, Plus, Edit, Save, Settings, Menu, Database, Filter } from "lucide-react"
 import { format } from "date-fns"
 
 import { Button } from "@/components/ui/button"
@@ -308,7 +308,7 @@ export default function FinanceTracker() {
                     className="justify-start"
                     onClick={() => handleTabChange("categories")}
                   >
-                    <Trash2 className="h-5 w-5 mr-2" />
+                    <Filter className="h-5 w-5 mr-2" />
                     Categories
                   </Button>
                   <Button
@@ -456,7 +456,7 @@ export default function FinanceTracker() {
               Add Expense
             </TabsTrigger>
             <TabsTrigger value="categories">
-              <Trash2 className="h-4 w-4 mr-2" />
+              <Filter className="h-4 w-4 mr-2" />
               Categories
             </TabsTrigger>
             <TabsTrigger value="charts">
