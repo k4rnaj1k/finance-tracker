@@ -195,26 +195,32 @@ export function DataManagement({ onDataChanged }: DataManagementProps) {
 
       // Import categories
       setImportProgress(30)
+      const categories = await getCategories();
+      for (const cat of categories) {
+        await deleteCategory(cat.id)
+      }
       for (const category of data.categories) {
-        const categories = await getCategories();
-        categories.forEach(async (cat) => { await deleteCategory(cat.id) });
         await addCategory(category)
       }
 
       // Import exchange rates
       setImportProgress(50)
+      const exchangeRates = await getAllExchangeRates();
+      for (const rate of exchangeRates) {
+        await deleteExchangeRate(rate.id);
+      }
       for (const rate of data.exchangeRates) {
-        const exchangeRates = await getAllExchangeRates();
-        exchangeRates.forEach(async (rate) => { await deleteExchangeRate(rate.id) });
         await addExchangeRate(rate)
       }
 
       // Import expenses
       let count = 0
       const total = data.expenses.length
+      const expenses = await getExpenses();
+      for (const exp of expenses) {
+        await deleteExpense(exp.id)
+      }
       for (const expense of data.expenses) {
-        const expenses = await getExpenses();
-        expenses.forEach(async (exp) => { await deleteExpense(exp.id) });
         await addExpense(expense)
         count++
         setImportProgress(50 + Math.floor((count / total) * 40))
