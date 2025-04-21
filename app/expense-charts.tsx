@@ -80,6 +80,11 @@ export function ExpenseCharts({
   // Prepare data for charts - convert all amounts to default currency
   useEffect(() => {
     const prepareChartData = async () => {
+      if (showOnlyCurrentMonth && !currentIncomeMonthStart) {
+        // Wait until currentIncomeMonthStart is set
+        return
+      }
+
       setIsLoading(true)
 
       try {
@@ -130,7 +135,7 @@ export function ExpenseCharts({
     }
 
     prepareChartData()
-  }, [expenses, categories, currentCurrency, exchangeRate, showOnlyCurrentMonth, currentIncomeMonthStart])
+  }, [expenses, categories, currentCurrency, currentIncomeMonthStart, showOnlyCurrentMonth])
 
   // Currency symbol helper
   const getCurrencySymbol = (currency: string) => {
