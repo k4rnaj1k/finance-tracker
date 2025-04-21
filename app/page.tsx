@@ -32,6 +32,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { IncomeMonthManager } from "./income-month-manager"
 import { toast } from "@/components/ui/use-toast"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { useMediaQuery } from "@/hooks/use-media-query"
 
 // Define the Expense type
 interface Expense {
@@ -244,7 +245,7 @@ export default function FinanceTracker() {
 
     updateCalculations()
   }, [expenses, income, defaultCurrency, incomeCurrency, exchangeRate, isDBInitialized, incomeMonthStart])
-
+  const isMobile = useMediaQuery("(max-width: 768px)")
   // Currency symbol helper
   const getCurrencySymbol = (currency: string) => {
     return currency === "USD" ? "$" : "₴"
@@ -352,6 +353,7 @@ export default function FinanceTracker() {
       {/* Install prompt */}
       <InstallPrompt />
 
+      <span hidden={isMobile && activeTab === "expenses"}>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6">
         <Card>
           <CardHeader className="pb-2">
@@ -362,7 +364,6 @@ export default function FinanceTracker() {
               <div className="flex flex-wrap items-center gap-2">
                 <Input
                   type="number"
-                  value={newIncome}
                   onChange={(e) => setNewIncome(Number(e.target.value))}
                   className="max-w-[150px]"
                 />
@@ -428,6 +429,7 @@ export default function FinanceTracker() {
           </CardContent>
         </Card>
       </div>
+      </span>
 
       {incomeMonthStart && (
         <div className="bg-muted p-3 rounded-lg mb-6 flex flex-wrap items-center justify-between gap-2">
