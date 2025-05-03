@@ -267,7 +267,7 @@ export function ExpenseList({
                       className="w-3 h-3 rounded-full"
                       style={{ backgroundColor: getCategoryColor(expense.categoryId) }}
                     />
-                    <span className="font-medium">{getCategoryName(expense.categoryId)}</span>
+                    <span className="font-medium">{expense.description}</span>
                     {currentIncomeMonthStart && new Date(expense.date) >= currentIncomeMonthStart ? (
                       <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs">
                         Current
@@ -316,8 +316,8 @@ export function ExpenseList({
                 <CardContent className="pt-0 pb-4 px-4 border-t">
                   <div className="space-y-2 mt-2">
                     <div>
-                      <div className="text-xs text-muted-foreground">Description</div>
-                      <div>{expense.description}</div>
+                      <div className="text-xs text-muted-foreground">Category</div>
+                      <div>{getCategoryName(expense.categoryId)}</div>
                     </div>
                     <div className="flex justify-end space-x-2 mt-4">
                       <Button variant="outline" size="sm" onClick={() => handleEdit(expense)}>

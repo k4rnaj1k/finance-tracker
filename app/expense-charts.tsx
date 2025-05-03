@@ -20,6 +20,8 @@ import {
 import { convertCurrency } from "./db"
 import { Switch } from "@/components/ui/switch"
 import { useMediaQuery } from "@/hooks/use-media-query"
+import { ExpenseList } from "./expense-list"
+import { ExpenseChartsExpenses } from "./expense-charts-expenses"
 
 // Define the Expense type
 interface Expense {
@@ -67,6 +69,7 @@ export function ExpenseCharts({
   const [showOnlyCurrentMonth, setShowOnlyCurrentMonth] = useState(true)
   const [currentCurrency, setCurrentCurrency] = useState(defaultCurrency)
   const isMobile = useMediaQuery("(max-width: 768px)")
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
   // Update when default currency changes
   useEffect(() => {
@@ -124,6 +127,7 @@ export function ExpenseCharts({
             name: category.name,
             value: categoryTotals[category.id],
             color: category.color,
+            categoryId: category.id,
           }))
           .filter((item) => item.value > 0) // Only include categories with expenses
           .sort((a, b) => b.value - a.value) // Sort by value (highest first)
@@ -195,7 +199,7 @@ export function ExpenseCharts({
         <TabsContent value="pie" className="pt-4">
           <Card>
             <CardContent className="pt-6">
-              <div className="h-[300px] md:h-[400px]">
+              <div className={`h-[600px] md:h-[${60 * categories.length}px]`}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -209,11 +213,17 @@ export function ExpenseCharts({
                       dataKey="value"
                     >
                       {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
+                        <Cell onClick={() => {
+                          setSelectedCategoryId(entry.categoryId);
+                        }} key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value: number) => [formatCurrency(value), "Amount"]} />
-                    <Legend layout={isMobile ? "horizontal" : "vertical"} verticalAlign="bottom" align="center" />
+                    <Tooltip formatter={(value: number) => [formatCurrency(value), "Amount"]} labelFormatter={(label) => {
+                      // Find the original full name
+                      const item = mobileChartData.find((d) => d.shortName === label)
+                      return item ? item.name : label
+                    }} />
+                    <Legend layout={isMobile || categories.length > 5 ? "horizontal" : "vertical"} verticalAlign="bottom" align="center" />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -226,12 +236,12 @@ export function ExpenseCharts({
             <CardContent className="pt-6">
               {isMobile ? (
                 // Mobile-specific horizontal bar chart
-                <div className="h-[400px]">
+                <div className={`h-[${40 * mobileChartData.length}px]`}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       layout="vertical"
-                      data={mobileChartData.slice(0, 10)} // Limit to top 10 for mobile
-                      margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
+                      data={mobileChartData}
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
                       <XAxis type="number" tickFormatter={(value) => `${value.toFixed(0)}`} />
@@ -246,7 +256,9 @@ export function ExpenseCharts({
                       />
                       <Bar dataKey="value" name={`Amount (${currentCurrency})`} radius={[0, 4, 4, 0]}>
                         {mobileChartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
+                          <Cell key={`cell-${index}`} onClick={() => {
+                            setSelectedCategoryId(entry.categoryId);
+                          }} fill={entry.color} />
                         ))}
                         <LabelList
                           dataKey="value"
@@ -260,7 +272,7 @@ export function ExpenseCharts({
                 </div>
               ) : (
                 // Desktop bar chart
-                <div className="h-[400px]">
+                <div className="h-[500px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 30 }}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -270,7 +282,9 @@ export function ExpenseCharts({
                       <Legend />
                       <Bar dataKey="value" name={`Amount (${currentCurrency})`} radius={[4, 4, 0, 0]}>
                         {chartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
+                          <Cell onClick={() => {
+                            setSelectedCategoryId(entry.categoryId);
+                          }} key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Bar>
                     </BarChart>
@@ -281,6 +295,7 @@ export function ExpenseCharts({
           </Card>
         </TabsContent>
       </Tabs>
+      {selectedCategoryId && (<ExpenseChartsExpenses categoryId={selectedCategoryId} />)}
     </div>
   )
 }

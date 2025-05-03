@@ -1,6 +1,6 @@
 // Service Worker for Finance Tracker PWA
 
-const CACHE_NAME = "finance-tracker-v1.6"
+const CACHE_NAME = "finance-tracker-v1.7"
 
 // Assets to cache
 const ASSETS = [
